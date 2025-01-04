@@ -1,8 +1,11 @@
 const mongoose = require('mongoose');
+const {DB_NAME} = require('../constants');
 
 const connectDB = async () => {
   try {
-    const connectionInstance = await mongoose.connect(process.env.MONGODB_URI);
+    const connectionInstance = await mongoose.connect(
+      `${process.env.MONGODB_URI}/${DB_NAME}`,
+    );
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
