@@ -13,7 +13,7 @@ const errorHandler = (err, req, res, next) => {
   const statusCode = err.status || 500;
   const message =
     process.env.NODE_ENV === 'production'
-      ? 'Something went wrong!'
+      ? 'Something went wrong! Please try again later.'
       : err.message || 'Internal Server Error';
 
   res.status(statusCode).json({

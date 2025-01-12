@@ -1,4 +1,7 @@
-const {hashPassword, comparePassword} = require('../utils/bcrypt/bcrypt');
+const {
+  hashPassword,
+  comparePassword,
+} = require('../utils/bcrypt/passwordBcrypt');
 const {
   generateAccessToken,
   generateRefreshToken,

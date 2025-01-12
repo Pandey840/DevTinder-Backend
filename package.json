@@ -19,7 +19,9 @@
     "prettier": "^3.4.2"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.4",
     "bcryptjs": "^2.4.3",
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
