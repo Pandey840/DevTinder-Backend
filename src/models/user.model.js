@@ -1,56 +1,79 @@
 const mongoose = require('mongoose');
+const validator = require('validator');
+const {user: userMessages} = require('../utils/messages');
 
 const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
-      required: [true, 'First name is required'],
+      required: [true, userMessages.validation.firstName.required],
       trim: true,
-      minlength: [2, 'First name must be at least 2 characters long'],
-      maxlength: [50, 'First name cannot exceed 50 characters'],
+      minlength: [4, userMessages.validation.firstName.minlength],
+      maxlength: [20, userMessages.validation.firstName.maxlength],
     },
     lastName: {
       type: String,
-      required: [true, 'Last name is required'],
       trim: true,
-      minlength: [2, 'Last name must be at least 2 characters long'],
-      maxlength: [50, 'Last name cannot exceed 50 characters'],
+      maxlength: [20, userMessages.validation.lastName.maxlength],
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, userMessages.validation.email.required],
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Invalid email format'],
+      index: true, // good practice for clarity and query performance
+      validate: {
+        validator: validator.isEmail,
+        message: userMessages.validation.email.invalid,
+      },
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
-      minlength: [8, 'Password must be at least 8 characters long'],
+      required: [true, userMessages.validation.password.required],
       select: false, // Do not return password in queries by default
     },
     age: {
       type: Number,
-      min: [0, 'Age cannot be negative'],
-      max: [150, 'Age cannot exceed 150'],
-      required: true,
+      min: [18, userMessages.validation.age.min],
+      max: [150, userMessages.validation.age.max],
     },
     gender: {
       type: String,
-      enum: ['male', 'female', 'other', 'prefer not to say'],
-      default: 'prefer not to say',
+      required: [true, userMessages.validation.gender.required],
+      enum: {
+        values: ['male', 'female', 'other'],
+        message: userMessages.validation.gender.message,
+      },
+    },
+    about: {
+      type: String,
+      trim: true,
+      maxlength: [500, userMessages.validation.about.maxlength],
+    },
+    skills: {
+      type: [String],
+      validate: {
+        validator: (value) => value.length <= 10,
+        message: userMessages.validation.skills.message,
+      },
     },
     isVerified: {
       type: Boolean,
       default: false,
     },
-    avatar: {
+    photoUrl: {
       type: String,
-      default: null,
+      default: process.env.DEFAULT_PHOTO_URL,
+      validate: {
+        validator: (value) => !value || validator.isURL(value),
+        message: userMessages.validation.photoUrl.message,
+      },
     },
   },
   {
     timestamps: true,
   },
 );
+
+module.exports = mongoose.model('User', userSchema);
