@@ -5,12 +5,13 @@ const {
   refreshAccessToken,
   logout,
 } = require('../controllers/auth.controllers');
+const {verifyAccessToken} = require('../middlewares/verifyToken');
 
 const authRouter = express.Router();
 
 authRouter.post('/signup', signUp);
 authRouter.post('/login', login);
 authRouter.get('/refresh', refreshAccessToken);
-authRouter.post('/logout', logout);
+authRouter.post('/logout', verifyAccessToken, logout);
 
 module.exports = authRouter;

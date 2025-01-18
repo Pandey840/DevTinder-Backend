@@ -60,6 +60,13 @@ const updatePassword = async (req, res, next) => {
       throw createHttpError(401, 'Old password is incorrect.');
     }
 
+    if (oldPassword === newPassword) {
+      throw createHttpError(
+        400,
+        'New password cannot be the same as the old password.',
+      );
+    }
+
     if (newPassword.length < 8) {
       throw createHttpError(
         400,

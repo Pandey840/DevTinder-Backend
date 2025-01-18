@@ -116,9 +116,19 @@ const refreshAccessToken = async (req, res) => {
   }
 };
 
+const tokenBlacklist = new Set();
 const logout = (req, res) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(400).json({message: 'Access token not provided'});
+  }
+
+  const accessToken = authHeader.split(' ')[1];
+  tokenBlacklist.add(accessToken);
+
   res.clearCookie('refreshToken');
   res.status(200).json({message: 'Logged out successfully'});
 };
 
-module.exports = {signUp, login, refreshAccessToken, logout};
+module.exports = {signUp, login, refreshAccessToken, logout, tokenBlacklist};
