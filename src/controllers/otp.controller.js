@@ -41,10 +41,16 @@ const sendOTP = async (req, res, next) => {
     });
     await otpRecord.save();
 
+    const variables = {
+      userName: user.firstName || 'user',
+      otp: otp,
+      expiryTime: '10 minutes',
+      year: new Date().getFullYear(),
+    };
+
     // Send OTP via email
-    const subject = 'Your OTP for Email Verification';
-    const text = `Your OTP is: ${otp}. It will expire in 10 minutes.`;
-    await sendEmail(email, subject, text);
+    const subject = 'DevTinder: Your OTP for Email Verification';
+    await sendEmail(email, subject, 'otp-email', variables);
 
     res
       .status(200)

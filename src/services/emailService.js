@@ -1,23 +1,17 @@
 const sgMail = require('@sendgrid/mail');
+const {compileTemplate} = require('../utils/compileTemplate/compileTemplate');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-/**
- * Sends an email via SendGrid.
- * @param {string} to - Recipient email address.
- * @param {string} subject - Email subject.
- * @param {string} text - Email plain text.
- * @returns {Promise<void>}
- */
-const sendEmail = async (to, subject, text) => {
+const sendEmail = async (to, subject, templateName, variables) => {
   try {
+    const htmlContent = compileTemplate(templateName, variables);
     await sgMail.send({
       to,
       from: process.env.EMAIL_FROM,
       subject,
-      text,
+      html: htmlContent,
     });
-    console.log('Email sent successfully.');
   } catch (error) {
     console.error(
       'Error sending email:',
