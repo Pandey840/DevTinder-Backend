@@ -10,6 +10,8 @@ const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const {user: userMessages} = require('../utils/messages');
+const parseTimeInSec = require('../utils/parseTime/parseTimeInSec');
+const {saveToken, removeToken} = require('../services/tokenService');
 
 const signUp = async (req, res, next) => {
   const {firstName, lastName, email, password, gender} = req.body;
@@ -77,6 +79,12 @@ const login = async (req, res, next) => {
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
+    const accessTokenExpiry = parseTimeInSec(process.env.ACCESS_TOKEN_EXPIRY);
+    const refreshTokenExpiry = parseTimeInSec(process.env.REFRESH_TOKEN_EXPIRY);
+
+    await saveToken(user._id, accessToken, 'access', accessTokenExpiry);
+    await saveToken(user._id, refreshToken, 'refresh', refreshTokenExpiry);
+
     // Set refresh token as httpOnly cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -116,19 +124,35 @@ const refreshAccessToken = async (req, res) => {
   }
 };
 
-const tokenBlacklist = new Set();
-const logout = (req, res) => {
-  const authHeader = req.headers.authorization;
+const logout = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(400).json({message: 'Access token not provided'});
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(400).json({message: 'Access token not provided'});
+    }
+
+    const accessToken = authHeader.split(' ')[1];
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken) {
+      return res
+        .status(400)
+        .json({message: 'Refresh token not provided in cookies'});
+    }
+
+    const decodedAccess = jwt.verify(
+      accessToken,
+      process.env.ACCESS_TOKEN_SECRET,
+    );
+
+    const userId = decodedAccess.id;
+    await removeToken(userId, ['access', 'refresh']);
+
+    res.clearCookie('refreshToken');
+    res.status(200).json({message: 'Logged out successfully'});
+  } catch (error) {
+    next(error);
   }
-
-  const accessToken = authHeader.split(' ')[1];
-  tokenBlacklist.add(accessToken);
-
-  res.clearCookie('refreshToken');
-  res.status(200).json({message: 'Logged out successfully'});
 };
 
-module.exports = {signUp, login, refreshAccessToken, logout, tokenBlacklist};
+module.exports = {signUp, login, refreshAccessToken, logout};

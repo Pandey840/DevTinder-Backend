@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
+const Token = require('../models/tokens.model');
 const {auth: authMessages} = require('../utils/messages');
-const {tokenBlacklist} = require('../controllers/auth.controllers');
+const {decryptToken} = require('../utils/jwtTokens/encryptTokens');
 
-const verifyAccessToken = (req, res, next) => {
+const verifyAccessToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -10,13 +11,23 @@ const verifyAccessToken = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-  if (tokenBlacklist.has(token)) {
-    return res.status(401).json({
-      message: 'Your session has expired. Please log in again to continue.',
-    });
-  }
   try {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const tokenRecord = await Token.findOne({
+      userId: decoded.id,
+      type: 'access',
+    });
+
+    if (!tokenRecord || tokenRecord.expiresAt < Date.now()) {
+      return res.status(401).json({message: 'Token is invalid or expired'});
+    }
+
+    const decryptedToken = decryptToken(tokenRecord.token, tokenRecord.iv);
+
+    if (decryptedToken !== token) {
+      return res.status(401).json({message: 'Token is invalid or expired'});
+    }
+
     req.user = decoded;
     next();
   } catch (error) {
