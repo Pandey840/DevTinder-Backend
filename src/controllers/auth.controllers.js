@@ -75,6 +75,8 @@ const login = async (req, res, next) => {
       return res.status(401).json({message: 'Invalid credentials'});
     }
 
+    await removeToken(user._id, ['access', 'refresh']);
+
     // Generate tokens
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
