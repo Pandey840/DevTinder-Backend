@@ -6,6 +6,7 @@ const {
   hashPassword,
   comparePassword,
 } = require('../utils/bcrypt/passwordBcrypt');
+const {formatDate} = require('../utils/parseTime/formatDate');
 
 const updateUser = async (req, res, next) => {
   const userId = req.user.id; // Assuming user ID is available in req.user after authentication
@@ -90,4 +91,26 @@ const updatePassword = async (req, res, next) => {
   }
 };
 
-module.exports = {updateUser, updatePassword};
+const userProfile = async (req, res, next) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId).select('-__v');
+
+    if (!user) {
+      throw createHttpError(404, 'User not found');
+    }
+
+    const formattedUser = {
+      ...user.toObject(),
+      createdAt: formatDate(user.createdAt),
+      updatedAt: formatDate(user.updatedAt),
+    };
+
+    res.status(200).json(formattedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {updateUser, updatePassword, userProfile};
