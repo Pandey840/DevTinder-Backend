@@ -111,8 +111,17 @@ const refreshAccessToken = async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const newAccessToken = generateAccessToken(decoded.id);
-    const newRefreshToken = generateRefreshToken(decoded.id);
+    const userId = decoded.id;
+
+    await removeToken(userId, ['access', 'refresh']);
+    const newAccessToken = generateAccessToken(userId);
+    const newRefreshToken = generateRefreshToken(userId);
+
+    const accessTokenExpiry = parseTimeInSec(process.env.ACCESS_TOKEN_EXPIRY);
+    const refreshTokenExpiry = parseTimeInSec(process.env.REFRESH_TOKEN_EXPIRY);
+
+    await saveToken(userId, newAccessToken, 'access', accessTokenExpiry);
+    await saveToken(userId, newRefreshToken, 'refresh', refreshTokenExpiry);
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
