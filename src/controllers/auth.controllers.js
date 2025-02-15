@@ -93,6 +93,7 @@ const login = async (req, res, next) => {
       secure: process.env.NODE_ENV === 'production', // Only in production
       sameSite: 'strict',
       maxAge: process.env.COOKIE_MAX_AGE,
+      path: '/',
     });
 
     res.status(200).json({message: 'Login successful', accessToken});
@@ -128,6 +129,7 @@ const refreshAccessToken = async (req, res) => {
       secure: process.env.NODE_ENV === 'production', // Only in production
       sameSite: 'strict',
       maxAge: process.env.COOKIE_MAX_AGE,
+      path: '/',
     });
     res.status(200).json({accessToken: newAccessToken});
   } catch (error) {
