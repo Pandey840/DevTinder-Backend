@@ -67,12 +67,12 @@ const login = async (req, res, next) => {
     const user = await User.findOne({email}).select('+password'); // Explicitly include the password field in the query because it is set to select: false in the schema for security reasons.
 
     if (!user) {
-      return res.status(401).json({message: 'Invalid credentials'});
+      return res.status(400).json({message: 'Invalid credentials'});
     }
 
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({message: 'Invalid credentials'});
+      return res.status(400).json({message: 'Invalid credentials'});
     }
 
     await removeToken(user._id, ['access', 'refresh']);
