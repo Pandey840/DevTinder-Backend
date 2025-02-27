@@ -1,17 +1,18 @@
-const {
-  hashPassword,
-  comparePassword,
-} = require('../utils/bcrypt/passwordBcrypt');
+const {comparePassword} = require('../utils/bcrypt/passwordBcrypt');
 const {
   generateAccessToken,
   generateRefreshToken,
 } = require('../utils/jwtTokens/jwt');
 const User = require('../models/user.model');
+const OTP = require('../models/otp.model');
 const jwt = require('jsonwebtoken');
 const validator = require('validator');
 const {user: userMessages} = require('../utils/messages');
 const parseTimeInSec = require('../utils/parseTime/parseTimeInSec');
 const {saveToken, removeToken} = require('../services/tokenService');
+const {generateOTP} = require('../utils/generateOtp/generateOTP');
+const {hashOTP} = require('../utils/bcrypt/otpBcrypt');
+const {sendEmail} = require('../services/emailService');
 
 const signUp = async (req, res, next) => {
   const {firstName, lastName, email, password, gender} = req.body;
@@ -40,17 +41,29 @@ const signUp = async (req, res, next) => {
       return res.status(400).json({message: 'User already exists'});
     }
 
-    const hashedPassword = await hashPassword(password);
-    const user = new User({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      gender,
-    });
-    await user.save();
+    const otp = generateOTP();
+    const hashedOtp = await hashOTP(otp);
 
-    res.status(201).json({message: 'User created successfully'});
+    const otpRecord = new OTP({
+      email,
+      otp: hashedOtp,
+    });
+    await otpRecord.save();
+
+    const variables = {
+      userName: firstName || 'user',
+      otp: otp,
+      expiryTime: '10 minutes',
+      year: new Date().getFullYear(),
+    };
+
+    const subject = 'DevTinder: Your OTP for Email Verification';
+    await sendEmail(email, subject, 'otp-email', variables);
+
+    res.status(201).json({
+      name: firstName,
+      message: 'OTP sent successfully. Please verify your email.',
+    });
   } catch (error) {
     next(error);
   }

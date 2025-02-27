@@ -3,6 +3,7 @@ const {generateOTP} = require('../utils/generateOtp/generateOTP');
 const OTP = require('../models/otp.model');
 const User = require('../models/user.model');
 const {hashOTP, compareOTP} = require('../utils/bcrypt/otpBcrypt');
+const {hashPassword} = require('../utils/bcrypt/passwordBcrypt');
 
 const sendOTP = async (req, res, next) => {
   const {email} = req.body;
@@ -111,22 +112,25 @@ const resendOTP = async (req, res, next) => {
 };
 
 const verifyOTP = async (req, res, next) => {
-  const {email, otp} = req.body;
+  const {firstName, lastName, password, gender, email, otp} = req.body;
 
-  if (!email || !otp) {
-    return res.status(400).json({message: 'Email and OTP are required'});
+  const missingFields = [
+    'firstName',
+    'password',
+    'gender',
+    'email',
+    'otp',
+  ].filter((field) => !req.body[field]);
+
+  if (missingFields.length) {
+    return res
+      .status(400)
+      .json({message: `Missing fields: ${missingFields.join(', ')}`});
   }
 
   try {
-    const user = await User.findOne({email});
-    if (!user) {
-      return res.status(404).json({message: 'User not found'});
-    }
-
     // Find the most recent OTP record for the user
-    const otpRecord = await OTP.findOne({userId: user._id}).sort({
-      createdAt: -1,
-    });
+    const otpRecord = await OTP.findOne({email}).sort({createdAt: -1});
     if (!otpRecord) {
       return res
         .status(404)
@@ -139,13 +143,25 @@ const verifyOTP = async (req, res, next) => {
       return res.status(400).json({message: 'Invalid OTP'});
     }
 
-    user.isVerified = true;
+    const hashedPassword = await hashPassword(password);
+
+    const user = new User({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      gender,
+      isVerified: true,
+    });
     await user.save();
 
     // Optionally, delete the OTP record after successful verification
     await OTP.deleteOne({_id: otpRecord._id});
 
-    res.status(200).json({message: 'OTP verified successfully'});
+    res.status(200).json({
+      name: firstName,
+      message: 'OTP verified successfully. User created.',
+    });
   } catch (error) {
     next(error);
   }
