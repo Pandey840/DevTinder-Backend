@@ -4,6 +4,12 @@ const OTP = require('../models/otp.model');
 const User = require('../models/user.model');
 const {hashOTP, compareOTP} = require('../utils/bcrypt/otpBcrypt');
 const {hashPassword} = require('../utils/bcrypt/passwordBcrypt');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require('../utils/jwtTokens/jwt');
+const parseTimeInSec = require('../utils/parseTime/parseTimeInSec');
+const {saveToken} = require('../services/tokenService');
 
 const sendOTP = async (req, res, next) => {
   const {email} = req.body;
@@ -158,9 +164,28 @@ const verifyOTP = async (req, res, next) => {
     // Optionally, delete the OTP record after successful verification
     await OTP.deleteOne({_id: otpRecord._id});
 
+    const accessToken = generateAccessToken(user._id);
+    const refreshToken = generateRefreshToken(user._id);
+
+    const accessTokenExpiry = parseTimeInSec(process.env.ACCESS_TOKEN_EXPIRY);
+    const refreshTokenExpiry = parseTimeInSec(process.env.REFRESH_TOKEN_EXPIRY);
+
+    await saveToken(user._id, accessToken, 'access', accessTokenExpiry);
+    await saveToken(user._id, refreshToken, 'refresh', refreshTokenExpiry);
+
+    // Set refresh token as httpOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: process.env.COOKIE_MAX_AGE,
+      path: '/',
+    });
+
     res.status(200).json({
       name: firstName,
       message: 'OTP verified successfully. User created.',
+      accessToken,
     });
   } catch (error) {
     next(error);
