@@ -20,7 +20,14 @@ const updateUser = async (req, res, next) => {
       throw createHttpError(404, 'User not found');
     }
 
-    const allowedFields = ['age', 'about', 'skills', 'photoUrl'];
+    const allowedFields = [
+      'firstName',
+      'lastName',
+      'age',
+      'about',
+      'skills',
+      'photoUrl',
+    ];
     Object.keys(updates).forEach((key) => {
       if (!allowedFields.includes(key)) {
         throw createHttpError(
