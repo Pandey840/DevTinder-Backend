@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, userMessages.validation.firstName.required],
       trim: true,
-      minlength: [4, userMessages.validation.firstName.minlength],
+      minlength: [2, userMessages.validation.firstName.minlength],
       maxlength: [20, userMessages.validation.firstName.maxlength],
     },
     lastName: {
