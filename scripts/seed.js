@@ -66,7 +66,7 @@ const {hashPassword} = require('../src/utils/bcrypt/passwordBcrypt');
           faker.number.int({min: 3, max: 6}),
         ),
         isVerified: faker.datatype.boolean(),
-        photoUrl: faker.image.avatarGitHub() || process.env.DEFAULT_PHOTO_URL,
+        photoUrl: faker.image.avatar() || process.env.DEFAULT_PHOTO_URL,
       };
       users.push(user);
     }
