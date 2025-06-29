@@ -50,7 +50,8 @@ const {hashPassword} = require('../src/utils/bcrypt/passwordBcrypt');
         continue;
       }
 
-      const rawPassword = `${firstName}@123`;
+      const suffix = process.env.SEED_PASSWORD_SUFFIX;
+      const rawPassword = `${firstName}${suffix}`;
       const hashed = await hashPassword(rawPassword);
       const age = faker.number.int({min: 18, max: 50});
 
