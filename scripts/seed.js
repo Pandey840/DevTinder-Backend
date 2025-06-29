@@ -11,7 +11,7 @@ const {hashPassword} = require('../src/utils/bcrypt/passwordBcrypt');
     console.log('MongoDB connected for seeding');
 
     const USER_COUNT = process.env.USER_COUNT;
-    const genders = ['male', 'female', 'other'];
+    const genders = ['male', 'female'];
     const skillsList = [
       'JavaScript',
       'React',
@@ -52,13 +52,19 @@ const {hashPassword} = require('../src/utils/bcrypt/passwordBcrypt');
 
       const rawPassword = `${firstName}@123`;
       const hashed = await hashPassword(rawPassword);
+      const age = faker.number.int({min: 18, max: 50});
+
+      const imageId = faker.number.int({min: 0, max: 99});
+      const photoUrl = process.env.AVATAR_BASE_URL
+        ? `${process.env.AVATAR_BASE_URL}/${gender}/512/${imageId}.jpg`
+        : process.env.DEFAULT_PHOTO_URL;
 
       const user = {
         firstName,
         lastName,
         email,
         password: hashed,
-        age: faker.number.int({min: 18, max: 50}),
+        age,
         gender,
         about: faker.person.bio(),
         skills: faker.helpers.arrayElements(
@@ -66,12 +72,12 @@ const {hashPassword} = require('../src/utils/bcrypt/passwordBcrypt');
           faker.number.int({min: 3, max: 6}),
         ),
         isVerified: faker.datatype.boolean(),
-        photoUrl: faker.image.avatar() || process.env.DEFAULT_PHOTO_URL,
+        photoUrl,
       };
+
       users.push(user);
     }
 
-    // Insert users
     if (users.length > 0) {
       console.log(`Attempting to insert ${users.length} users...`);
       await User.insertMany(users);
