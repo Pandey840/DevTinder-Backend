@@ -120,4 +120,72 @@ const userProfile = async (req, res, next) => {
   }
 };
 
-module.exports = {updateUser, updatePassword, userProfile};
+const getAllUsers = async (req, res, next) => {
+  try {
+    let page = parseInt(req.query.page, 10);
+    let limit = parseInt(req.query.limit, 10);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1 || limit > 100) limit = 10;
+
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await User.countDocuments();
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    if (totalUsers === 0) {
+      return res.status(404).json({
+        message: 'No users available yet.',
+        data: {
+          users: [],
+          totalUsers: 0,
+          totalPages: 0,
+          currentPage: page,
+        },
+      });
+    }
+
+    if (page > totalPages) {
+      return res.status(400).json({
+        message: `You're requesting page ${page}, but only ${totalPages} pages are available.`,
+        data: {
+          users: [],
+          totalUsers,
+          totalPages,
+          currentPage: page,
+        },
+      });
+    }
+
+    const rawUsers = await User.find()
+      .select('-password -__v -createdAt -updatedAt')
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const users = rawUsers.map((user) => {
+      const {firstName, lastName, ...rest} = user;
+      return {
+        fullName: `${firstName} ${lastName || ''}`.trim(),
+        ...rest,
+      };
+    });
+
+    res.status(200).json({
+      message: 'Users fetched successfully.',
+      data: {
+        users,
+        totalUsers,
+        totalPages,
+        currentPage: page,
+        pageSize: users.length,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {updateUser, updatePassword, userProfile, getAllUsers};
